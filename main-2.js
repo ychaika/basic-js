@@ -91,7 +91,7 @@ const endpoint3 = {
     ]
 };
 
-let Pizza = function (ingredientsList, ingredientsPrice) {
+function Pizza (ingredientsList, ingredientsPrice) {
     let ingredients = ingredientsList;
     let price = ingredientsPrice;
     this.getPrice = function() {
@@ -102,136 +102,142 @@ let Pizza = function (ingredientsList, ingredientsPrice) {
     }
 }
 
-let Shelf = function() {
-    let pizzaData = [];
+function Shelf () {
+    this.pizzaData = [];
+    this.filterData();
+}
 
-    this.getIngredientsSet = function() {
-        let notUsedIngredients = pizzaData.slice();
-        let ingredientsSet = [];
-        let pizzaPrice = 0;
-        let ingredientsNumber = Math.floor(Math.random() * 4 + 3);
+Shelf.prototype.getIngredientsSet = function() {
+    let notUsedIngredients = this.pizzaData.slice();
+    let ingredientsSet = [];
+    let pizzaPrice = 0;
+    let ingredientsNumber = Math.floor(Math.random() * 4 + 3);
 
-        for (let i = 0; i < ingredientsNumber; i++) {
-            let curIngredient = Math.floor(Math.random() * notUsedIngredients.length);
-            ingredientsSet.push(notUsedIngredients[curIngredient]['name']);
-            pizzaPrice = pizzaPrice + notUsedIngredients[curIngredient]['price'];
-            notUsedIngredients.splice(curIngredient, 1);
-        }
+    for (let i = 0; i < ingredientsNumber; i++) {
+        let curIngredient = Math.floor(Math.random() * notUsedIngredients.length);
+        ingredientsSet.push(notUsedIngredients[curIngredient]['name']);
+        pizzaPrice = pizzaPrice + notUsedIngredients[curIngredient]['price'];
+        notUsedIngredients.splice(curIngredient, 1);
+    }
 
-        return {price: pizzaPrice, ingredients: ingredientsSet};
-    };
-    this.filterData = (function (){
-        endpoint1['ingredients'].forEach(function(elem) {
-            if (elem['price'].substr( elem['price'].length - 1) === '£') {
-                var newPrice = +elem['price'].slice(0, -1) * 3;
-            }
-            pizzaData.push({
-                id:  elem['id'],
-                name:  elem['name'],
-                price:  newPrice || +elem['price'].slice(0, -1)
-            });
-        });
-
-        Object.keys(endpoint2).forEach(function(elem) {
-            if (endpoint2[elem]['currency'].substr(endpoint2[elem]['currency'].length - 1) === '£') {
-                var newPrice = +endpoint2[elem]['price'].slice(0, -1) * 3;
-            }
-
-            pizzaData.push({
-                id: endpoint2[elem]['id'],
-                name: elem,
-                price: newPrice || +endpoint2[elem]['price']
-            });
-        });
-
-        endpoint3['data'].forEach(function(elem) {
-            let newItem= {};
-            elem['ingredient'].forEach(function(item) {
-                switch(item['key']) {
-                    case 'Id':
-                        newItem['id'] = +item['value'];
-                        break;
-                    case 'Name':
-                        newItem['name'] = item['value'];
-                        break;
-                    case 'Price':
-                        if (item['value'].substr(item['value'].length - 1) === '£') {
-                            return newItem['price'] = +item['value'].slice(0, -1) * 3;
-                        }
-                        return newItem['price'] = +item['value'].slice(0, -1);
-                    default:
-                        throw new Error('error in endpoint3 data');
-                }
-            });
-
-            pizzaData.push(newItem);
-        });
-    })(this);
+    return {price: pizzaPrice, ingredients: ingredientsSet};
 };
 
-let PizzasStore =  function() {
-    let createdPizzas = [];
-    let that = this;
-
-    this.createPizza =  function () {
-        let ingredientsData = this.shelf.getIngredientsSet();
-        let newPizza = new Pizza(ingredientsData['ingredients'], ingredientsData['price']);
-        createdPizzas.push(newPizza);
-    };
-    this.createFivePizzas = (function() {
-        for (let i = 0; i < 5; i++) {
-            that.createPizza();
+Shelf.prototype.filterData = function() {
+    endpoint1['ingredients'].forEach(function(elem) {
+        if (elem['price'].substr( elem['price'].length - 1) === '£') {
+            var newPrice = +elem['price'].slice(0, -1) * 3;
         }
-    })(that);
+        this.pizzaData.push({
+            id:  elem['id'],
+            name:  elem['name'],
+            price:  newPrice || Number(elem['price'].slice(0, -1))
+        });
+    }, this);
 
-    this.getBiggestPrice = function () {
-        let biggestPrice = 0;
+    Object.keys(endpoint2).forEach(function(elem) {
+        if (endpoint2[elem]['currency']- 1 === '£') {
+            var newPrice = +endpoint2[elem]['price'] * 3;
+        }
 
-        for (var i = 0; i < createdPizzas.length; i++) {
-            if (biggestPrice < createdPizzas[i].getPrice()) {
-                biggestPrice = createdPizzas[i].getPrice();
+        this.pizzaData.push({
+            id: endpoint2[elem]['id'],
+            name: elem,
+            price: newPrice || +endpoint2[elem]['price']
+        });
+    }, this);
+
+    endpoint3['data'].forEach(function(elem) {
+        let newItem= {};
+        elem['ingredient'].forEach(function(item) {
+            switch(item['key']) {
+                case 'Id':
+                    newItem['id'] = Number(item['value']);
+                    break;
+                case 'Name':
+                    newItem['name'] = item['value'];
+                    break;
+                case 'Price':
+                    if (item['value'].substr(item['value'].length - 1) === '£') {
+                        return newItem['price'] = +item['value'].slice(0, -1) * 3;
+                    }
+                    return newItem['price'] = +item['value'].slice(0, -1);
+                default:
+                    throw new Error('error in endpoint3 data');
             }
-        }
-        return biggestPrice;
-    };
-    this.getPopularIngredients = function () {
-        let topIng = [];
-        let topIngNumber = 0;
-        let usedIng = {};
+        });
 
-        for (var i = 0; i < createdPizzas.length; i++) {
-            let curPizza = createdPizzas[i].getIngredients();
-            for (var j = 0; j < curPizza.length; j++) {
-                if (curPizza[j] in usedIng) {
-                    usedIng[curPizza[j]] = usedIng[curPizza[j]] + 1;
-                } else {
-                    usedIng[curPizza[j]] = 1;
-                }
+        this.pizzaData.push(newItem);
+    }, this);
+};
+
+function PizzasStore () {
+    this.createdPizzas = [];
+    this.createFivePizzas();
+}
+
+PizzasStore.prototype.createPizza = function () {
+    let ingredientsData = this.shelf.getIngredientsSet();
+    let newPizza = new Pizza(ingredientsData['ingredients'], ingredientsData['price']);
+    this.createdPizzas.push(newPizza);
+};
+
+PizzasStore.prototype.createFivePizzas = function() {
+    for (let i = 0; i < 5; i++) {
+        this.createPizza();
+    }
+};
+
+PizzasStore.prototype.getBiggestPrice = function () {
+    let biggestPrice = 0;
+
+    for (var i = 0; i < this.createdPizzas.length; i++) {
+        if (biggestPrice < this.createdPizzas[i].getPrice()) {
+            biggestPrice = this.createdPizzas[i].getPrice();
+        }
+    }
+
+    console.log('the most expensive pizza' + biggestPrice);
+    return biggestPrice;
+};
+
+PizzasStore.prototype.getPopularIngredients = function() {
+    let topIngredients = [];
+    let usedIngredient = {};
+    let usedIngredientsArr = [];
+
+    this.createdPizzas.forEach (function(elem) {
+        let curPizza = elem.getIngredients();
+        curPizza.map(function(ingredient) {
+            if (ingredient in usedIngredient) {
+                usedIngredient[ingredient] = usedIngredient[ingredient ]+ 1;
+            } else {
+                usedIngredient[ingredient] = 1;
             }
-        }
+        });
+    });
 
-        for (let i = 0; i < Object.keys(usedIng).length; i++) {
-            let curIng = usedIng[Object.keys(usedIng)[i]];
-            if (topIng.length === 0) {
-                topIng.push(Object.keys(usedIng)[i]);
-                topIngNumber = curIng;
-            } else if (curIng > topIngNumber) {
-                topIng.length = 0;
-                topIng.push(Object.keys(usedIng)[i]);
-                topIngNumber = curIng;
-            } else if (curIng === topIngNumber) {
-                topIng.push(Object.keys(usedIng)[i]);
-            }
-        }
+    Object.keys(usedIngredient).map(function (elem, i) {
+        usedIngredientsArr.push({name: elem, count: Object.values(usedIngredient)[i]});
+    });
 
-        for (let j = 0; j < topIng.length; j++) {
-            console.log(topIng[j]);
+    usedIngredientsArr.reduce(function(topIngredient, curIngredient){
+        if (curIngredient.count > topIngredient.count) {
+            topIngredients.length = 0;
+            topIngredients.push(curIngredient);
+            return curIngredient;
+        } else if (curIngredient.count === topIngredient.count) {
+            topIngredients.push(curIngredient);
+            return topIngredient;
+        } else if (topIngredients.length === 0) {
+            topIngredients.push(topIngredient);
+            return topIngredient;
+        } else {
+            return topIngredient;
         }
+    });
 
-    };
-    this.getCreatedPizzas = function () {
-        return createdPizzas;
-    };
+    console.log('top ingredients ' + topIngredients)
 };
 
 PizzasStore.prototype.shelf = new Shelf();
