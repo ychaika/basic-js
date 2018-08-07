@@ -82,8 +82,8 @@ Market.prototype.generatePlayers = function () {
 Market.prototype.generatePlayersRating  = function () {
     this.players.map(function (player) {
         let ageRating = getAgeRating(player.parameters.age);
-        let speedRating = getSpeedRating(player.parameters.speed);
-        let staminaRating = getStaminaRating(player.parameters.stamina);
+        let speedRating = getOtherRating(player.parameters.speed, 35, 25);
+        let staminaRating = getOtherRating(player.parameters.stamina, 100, 70);
 
         player['rating'] = Math.round((ageRating + speedRating + staminaRating) / 3);
     });
@@ -96,21 +96,11 @@ Market.prototype.generatePlayersRating  = function () {
 
         return 100 / ageInterval * ageDifference;
     }
-    function getSpeedRating (curSpeed) {
-        let maxSpeed = 35;
-        let minSpeed = 25;
-        let speedInterval = maxSpeed - minSpeed;
-        let speedDifference = curSpeed - minSpeed;
+    function getOtherRating (value, max, min) {
+        let interval = max - min;
+        let difference = value - min;
 
-        return 100 / speedInterval * speedDifference;
-    }
-    function getStaminaRating (curStamina) {
-        let maxStamina = 100;
-        let minStamina = 70;
-        let staminaInterval = maxStamina - minStamina;
-        let staminaDifference = curStamina - minStamina;
-
-        return 100 / staminaInterval * staminaDifference;
+        return 100 / interval * difference;
     }
 };
 
