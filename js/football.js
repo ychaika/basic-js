@@ -168,14 +168,8 @@ Coach.prototype.setNumber = function (playerIndex) {
         return elem.number;
     });
 
-    pickNumber();
-
-    function pickNumber() {
+    while (newNumber == null || usedNumbers.indexOf(newNumber) > 0) {
         newNumber = Math.floor((Math.random() * 99) + 1);
-
-        if (usedNumbers.indexOf(newNumber) > 0) {
-            pickNumber();
-        }
     }
 
     usedNumbers.push(newNumber);
