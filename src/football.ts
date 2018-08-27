@@ -10,58 +10,95 @@ interface Parameters {
     stamina: number
 }
 
-interface Skills {
-    pass: number,
-    kick: number
-}
-
-interface Role {
-    role: string
-}
-
-interface ExtraSkill {
-    extraSkill: string
-}
-
-class Player {
+abstract class Player {
     public parameters: Parameters;
-    public skills: Skills;
-    public role: Role;
-    public extraSkill: ExtraSkill;
+    public role: string;
     public rating: number;
     public playerNumber: number;
 
-    constructor (parameters: Parameters, skills: Skills, role: Role, extraSkill: ExtraSkill) {
+    protected constructor (parameters: Parameters, role: string) {
         this.parameters = parameters;
-        this.skills = skills;
         this.role = role;
-        this.extraSkill = extraSkill;
+    }
+
+    public kick () {
+        console.log(this.parameters.name + ' did kick');
+    }
+    public pass () {
+        console.log(this.parameters.name + ' did pass');
+    }
+    abstract extraSkill():void;
+}
+
+class Goalkeeper extends Player {
+    constructor(parameters: Parameters, role:string) {
+        super(parameters, role);
+    }
+
+    public extraSkill() {
+        console.log(this.parameters.name + 'saving strikes on goal');
+    }
+}
+
+class Defender extends Player {
+    constructor(parameters: Parameters, role:string) {
+        super(parameters, role);
+    }
+
+    public extraSkill() {
+        console.log(this.parameters.name + 'defend zone');
+    }
+}
+class Midfield extends Player {
+    constructor(parameters: Parameters, role:string) {
+        super(parameters, role);
+    }
+
+    public extraSkill() {
+        console.log(this.parameters.name + 'start the attack');
+    }
+}
+class Forward extends Player {
+    constructor(parameters: Parameters, role:string) {
+        super(parameters, role);
+    }
+
+    public extraSkill() {
+        console.log(this.parameters.name + 'score goal');
     }
 }
 
 class Market {
     public players: Array<Player>;
+    public numbers: Array<number>;
 
     constructor() {
+        this.numbers = [];
         this.generatePlayers();
         this.generatePlayersRating();
     }
 
-    private generatePlayers = () => {
-        this.players = names.map( (playerName):Player => {
+    private generatePlayers () {
+        this.players = names.map((playerName) => {
             return this.generatePlayer(playerName);
         });
 
     };
-    private generatePlayer = (playerName: string):Player => {
+    private generatePlayer (playerName: string):Player {
         let parameters = this.createParameters(playerName);
-        let skills = this.generateSkills();
         let role = this.pickRole();
-        let extraSkill = this.getExtraSkill(role.role);
-
-        return new Player(parameters, skills, role, extraSkill);
+        switch (role) {
+            case 'goalkeeper':
+                return new Goalkeeper(parameters, role);
+            case 'defender':
+                return new Defender(parameters, role);
+            case 'midfield':
+                return new Midfield(parameters, role);
+            case 'forward':
+                return new Forward(parameters, role);
+        }
     };
-    private createParameters = (playerName: string):Parameters => {
+    private createParameters (playerName: string):Parameters {
         return {
             name: playerName,
             height: Math.floor(Math.random() * (195 - 160 + 1)) + 160,
@@ -71,41 +108,20 @@ class Market {
             stamina: Math.floor(Math.random() * (100 - 70 + 1)) + 70
         };
     };
-    private generateSkills = ():Skills => {
-        return {
-            pass: Math.floor(Math.random() * (100 - 60 + 1)) + 60,
-            kick: Math.floor(Math.random() * (100 - 60 + 1)) + 60
-        };
+    private pickRole () {
+        return roles[Math.floor(Math.random()*4)];
     };
-    private pickRole = ():Role => {
-        return {
-            role: roles[Math.floor(Math.random()*4)]
-        };
-    };
-    private getExtraSkill = (role: string):ExtraSkill => {
-        switch (role) {
-            case 'Goalkeeper':
-                return {extraSkill: 'Saving strikes on goal'};
-            case 'Defender':
-                return {extraSkill: 'Defend zone'};
-            case 'Midfield':
-                return {extraSkill: 'Start the attack'};
-            case 'Forward':
-                return {extraSkill: 'Score goal'};
-        }
-    };
-    private generatePlayersRating = ():void => {
-        this.players.map((player: Player) => {
+
+    private generatePlayersRating ():void {
+        this.players.map((player) => {
             let ageRating = this.getAgeRating(player.parameters.age);
             let speedRating = this.getOtherRating(player.parameters.speed, 35, 25);
             let staminaRating = this.getOtherRating(player.parameters.stamina, 100, 70);
 
             player.rating = Math.round((ageRating + speedRating + staminaRating) / 3);
         });
-
-
     };
-    private getAgeRating = (curAge: number):number => {
+    private getAgeRating (curAge: number):number {
         let maxAge = 40;
         let minAge = 17;
         let ageInterval = maxAge - minAge;
@@ -113,7 +129,7 @@ class Market {
 
         return 100 / ageInterval * ageDifference;
     };
-    private getOtherRating = (value: number, max: number, min: number):number => {
+    private getOtherRating (value: number, max: number, min: number):number {
         let interval = max - min;
         let difference = value - min;
 
@@ -122,19 +138,28 @@ class Market {
 }
 
 class Coach {
+    private static instance: Coach;
     public coachName: string;
     public market: Market;
     public team: Array<Player>;
 
-    constructor(coachName: string) {
-        this.coachName = coachName;
+    private constructor() {
         this.market = new Market();
         this.team = [];
         this.createTeam();
         this.showPlayersList();
     }
 
-    public createTeam = ():void => {
+    public static getInstance():Coach {
+        if (!Coach.instance) {
+            Coach.instance = new Coach();
+        }
+        return Coach.instance;
+    }
+    public set newName(name: string) {
+        this.coachName = name;
+    }
+    public createTeam ():void {
         let goalkeepers = {role: 'goalkeeper', count: 1};
         let defenders = {role: 'defender', count: 3};
         let midfields = {role: 'midfield', count: 3};
@@ -148,7 +173,7 @@ class Coach {
         this.getPlayers(others.count);
     };
 
-    public getPlayers = (playersCount: number, playersRole?: string):void => {
+    public getPlayers (playersCount: number, playersRole?: string):void {
         let players = playersCount;
         let role = playersRole;
 
@@ -157,8 +182,8 @@ class Coach {
 
             if (playersRole) {
                 this.market.players.reduce((topPlayer, curPlayer, index: number) => {
-                    if (curPlayer.role.role === role  && topPlayer.role.role === role && curPlayer.rating >= topPlayer.rating
-                        || topPlayer.role.role !== role && curPlayer.role.role === role) {
+                    if (curPlayer.role === role  && topPlayer.role === role && curPlayer.rating >= topPlayer.rating
+                        || topPlayer.role !== role && curPlayer.role === role) {
                         bestPlayerIndex = index;
                         return curPlayer;
                     } else {
@@ -182,23 +207,27 @@ class Coach {
         }
     };
 
-    public setNumber = (playerIndex: number):void => {
+    public setNumber (playerIndex: number):void {
         let newNumber =  null;
-        let usedNumbers = this.team.map((elem) => elem.playerNumber);
 
-        while (newNumber == null || usedNumbers.indexOf(newNumber) > 0) {
+        while (newNumber == null || this.market.numbers.indexOf(newNumber) > 0) {
             newNumber = Math.floor((Math.random() * 99) + 1);
         }
 
-        usedNumbers.push(newNumber);
+        this.market.numbers.push(newNumber);
         this.market.players[playerIndex].playerNumber = newNumber;
     };
 
     public showPlayersList = ():void => {
-        this.team.map((elem) => {
+        this.team.forEach((elem) => {
             console.log(elem.parameters.name + ' - ' + elem.playerNumber);
         });
     };
 }
 
-let newTeam = new Coach('den');
+let Den = Coach.getInstance();
+Den.newName = 'Den';
+console.log(Den.team[0]);
+Den.team[0].extraSkill();
+Den.team[0].kick();
+Den.team[0].pass();

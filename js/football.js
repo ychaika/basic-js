@@ -163,7 +163,7 @@ Coach.prototype.getPlayers = function (playersCount, playersRole) {
 };
 
 Coach.prototype.setNumber = function (playerIndex) {
-    let newNumber =  0;
+    let newNumber =  null;
     let usedNumbers = this.team.map(function (elem) {
         return elem.number;
     });
